@@ -107,10 +107,9 @@ class Blockchain(object):
         """
         guess = f'{block_string}{proof}'.encode()
         guess_hash = hashlib.sha256(guess).hexdigest()
-        return guess_hash[:3] == "000"
-
         # return True or False
-        return guess_hash[:3] == "000"
+        return guess_hash[:6] == "000000"
+
 
 # Instantiate our Node
 app = Flask(__name__)
@@ -149,6 +148,12 @@ def full_chain():
     }
     return jsonify(response), 200
 
+@app.route('/last_block', methods=['GET'])
+def last_block():
+    response = {
+        "last_block" : blockchain.chain[-1]
+    }
+    return jsonify(response), 200
 
 # Run the program on port 5000
 if __name__ == '__main__':
