@@ -123,22 +123,39 @@ blockchain = Blockchain()
 
 @app.route('/mine', methods=['POST'])
 def mine():
-    data = request.get_json()
+  # handle non json responses
+  values = request.get_json()
+  # check that the required fields are in the posted data
+  required_fields = ["proof", "id"]
+  if not all(k in values for k in required_fields):
+    response = {"message": "missing values"}
+    return jsonify(response), 400 
+  # get the submitted proof from the values data
+  submitted_proof = values.get("proof")
+  # determine if the proof is valid
+  last_block = blockchain.last_block
+  last_block_string = json.dumps(last_block, sort_keys=True).encode
 
-    id = data["id"]
-    proof = data["proof"]
+  if blockchain.valid_proof(last_block_string, submitted_proof):    
+      # forge a new block and it to the chain
+      previous_hash = blockchain.hash(last_block)
+      block = blockchain.new_block(submitted_proof, previous_hash)
 
-    ## make a check if id and proof are valid 
-    if id < 2:
-      return jsonify({"message" : "invalid"}), 400
-      
-    check_proof = blockchain.valid_proof(blockchain.last_block, proof)
+      # response objet
+      response = {
+        'message': "New Block Forged",
+        'index': block['index'],
+        'transactions': block['transactions'],
+        'proof': block['proof'],
+        'previous_hash': block['previous_hash'],
+      }
 
-    if check_proof:
-      blockchain.new_block(proof, data["previous_hash"])
-      return jsonify({"message" : "success"}), 200
-    else: return jsonify({"message" : "failure"}), 200
+      return jsonify(response), 200
 
+  else:
+    response = { "message": "proof was invalid or already submitted"}
+    return jsonify(response), 200
+    # otherwise send message stating that proof was invalid or already submitted
 
 @app.route('/chain', methods=['GET'])
 def full_chain():
